@@ -1,0 +1,88 @@
+%option noyywrap yylineno
+
+%x COMMENT
+
+%{
+#include <iostream>
+#include <cstdarg>
+
+using namespace std;
+
+#include "parser.tab.h"
+
+void
+info(const string& s, ...)
+{ 
+	va_list params;
+	va_start(params, s);
+	cerr << yylineno << ": info: " << s << endl; 
+	vfprintf(stderr, s.c_str(), params);
+	cerr << endl;
+}
+
+void
+yyerror(const string& s, ...)
+{ 
+	va_list params;
+	va_start(params, s);
+	cerr << yylineno << ": error: " << s << endl; 
+	vfprintf(stderr, s.c_str(), params);
+	cerr << endl;
+}
+
+YY_BUFFER_STATE yy_buffer;
+
+void scan_begin(const char * cmd)
+{
+  yy_buffer = yy_scan_string(cmd);
+}
+
+void scan_end ()
+{
+  yy_flush_buffer(yy_buffer);
+  yy_delete_buffer(yy_buffer); 
+}
+
+%}
+
+WS											[\t\ \n]+
+INTRINSIC_FUNCTION							sin
+OP											[+\*]
+EQ											==
+GETS                                        =
+OPGETS										{OP}{EQ}
+STACK                                       "STACK"
+PUSH                                        "push"
+POP                                         "pop"
+TOP                                         "top"
+PHI                                         "phi"
+OMP_RUNTIME_FUNC                            ("omp_get_num_threads()"|"omp_get_max_threads()")
+NAME										[_a-zA-Z][_a-zA-Z0-9]*
+
+%%
+
+"/*"										{ BEGIN(COMMENT); }
+<COMMENT>"*/"								{ BEGIN(INITIAL); }
+<COMMENT>([^*]|\n)+|.						{}
+<COMMENT><<EOF>>							{ yyerror("Unterminated comment"); return 0;}
+"//".*\n									{}
+{WS}										{}
+{INTRINSIC_FUNCTION}						{  info("INTRINSIC_FUNCTION found in line %d", yylineno);return INTF; }
+{OP}										{  info("OP found"); return OP; }
+{GETS}										{  info("EQ found"); return GETS; }	
+{EQ}										{  info("EQ found"); return EQ; }	
+{OPGETS}									{  info("OPGETS found"); return OPGETS; }	
+{STACK}										{  info("STACK found"); return STACK; }	
+{PUSH}										{  info("push found"); return PUSH; }	
+{POP}										{  info("pop found"); return POP; }	
+{TOP}										{  info("top found"); return TOP; }	
+{PHI}										{  info("PHI found"); return PHI; }	
+{OMP_RUNTIME_FUNC}							{  info("OMP_RUNTIME_FUNC found"); return OMP_RUNTIME_FUNC; }	
+{NAME}										{  info("NAME found"); return NAME; }
+.											{  info("DEFAULT rule for char: '%c'", yytext[0]); return yytext[0]; }
+
+
+%%
+
+
+

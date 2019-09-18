@@ -1,0 +1,47 @@
+%{
+#include <iostream>
+#include <cstdlib>
+
+extern int yylineno;
+extern int yylex (void);
+void info(const std::string& s, ...);
+void yyerror(const std::string& s, ...);
+
+
+
+%}
+
+%token INTF
+%token OP
+%token GETS
+%token EQ
+%token OPGETS
+%token STACK
+%token PUSH
+%token POP
+%token TOP
+%token PHI
+%token OMP_RUNTIME_FUNC
+%token NAME
+
+%%
+
+slc: 		seqstmts
+		;
+seqstmts: 	stmt ';' {info("seqstmts->stmt");}
+		| 	seqstmts   stmt ';'  {info("seqstmts-> seqstmt  stmt ");}
+		;
+stmt:		assign  {info("stmt->assign");}
+		;
+assign:		NAME GETS floatexpr
+        |   NAME GETS intexpr
+		;
+
+floatexpr:	PHI '(' NAME ')' 
+		;
+
+intexpr:   'e'
+        |  OMP_RUNTIME_FUNC
+		;
+%%
+
